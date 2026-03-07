@@ -17,7 +17,7 @@ export default function Home() {
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-slate-300 sm:text-xl">
             A Next.js app with Supabase auth, Tailwind CSS, and the same setup
-            as nexttest.
+            as harbor.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link
