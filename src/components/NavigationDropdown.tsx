@@ -43,15 +43,13 @@ export default function NavigationDropdown({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 rounded-md px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-[var(--muted)] transition-colors hover:bg-[var(--mist)] hover:text-[var(--ink)]"
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
         {label}
         <svg
-          className={`h-4 w-4 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -66,13 +64,13 @@ export default function NavigationDropdown({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 top-full z-[100] mt-1 w-48 rounded-md border bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
+        <div className="absolute left-0 top-full z-[100] mt-1 w-48 rounded-md border border-[var(--border)] bg-white shadow-lg">
           <div className="py-1">
-            {items.map((item, index) => (
+            {items.map((item) => (
               <Link
-                key={index}
+                key={item.href}
                 href={item.href}
-                className="block px-4 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="block px-4 py-2 text-sm text-[var(--ink)] transition-colors hover:bg-[var(--mist)]"
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}

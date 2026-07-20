@@ -1,48 +1,107 @@
 @import "tailwindcss";
 
 :root {
-  /* Light theme: modern white/grey surface */
-  --background: #f4f4f5; /* zinc-100 */
-  --foreground: #020617; /* slate-950 */
+  --background: #f2f5f7;
+  --foreground: #0b1c28;
+  --surface: #ffffff;
+  --muted: #5a6f7d;
+  --border: #d5dee4;
+  --accent: #0d6e6e;
+  --accent-dark: #0a5555;
+  --accent-soft: #e4f3f3;
+  --ink: #0b1c28;
+  --sea: #14808a;
+  --mist: #e8eef2;
 
-  /* Expose tokens as CSS variables without Tailwind @theme */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-fraunces);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f12; /* soft dark base */
-    --foreground: #f4f4f5; /* zinc-100, comfortable reading */
-    --surface: #18181b; /* zinc-900, cards/panels */
-    --muted: #a1a1aa; /* zinc-400, secondary text */
-    --border: #27272a; /* zinc-800, subtle borders */
-  }
+html {
+  color-scheme: light;
 }
 
 body {
-  /* Light: subtle neutral gradient */
-  background: radial-gradient(
-    circle at top,
-    #f9fafb 0%,
-    #f4f4f5 40%,
-    #efeff2 100%
-  );
+  background:
+    radial-gradient(ellipse 100% 60% at 80% -10%, #d4ebea 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 0% 20%, #dde8f0 0%, transparent 50%),
+    linear-gradient(180deg, #f7fafb 0%, #f2f5f7 40%, #eef2f5 100%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background: radial-gradient(
-      ellipse 120% 80% at 50% -20%,
-      #1c1c21 0%,
-      #0f0f12 50%,
-      #0a0a0c 100%
-    );
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease both;
+}
+
+.animate-draw-line {
+  transform-origin: left center;
+  animation: draw-line 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+}
+
+.animate-float {
+  animation: float-soft 5s ease-in-out infinite;
+}
+
+.delay-1 {
+  animation-delay: 0.12s;
+}
+.delay-2 {
+  animation-delay: 0.24s;
+}
+.delay-3 {
+  animation-delay: 0.36s;
+}
+.delay-4 {
+  animation-delay: 0.48s;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
 }
