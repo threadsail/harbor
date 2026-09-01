@@ -11,10 +11,10 @@ export default function ContactPage() {
       <div className="mt-10 border border-[var(--border)] bg-white p-6 sm:p-8">
         <p className="text-sm font-semibold text-[var(--ink)]">Email</p>
         <a
-          href="mailto:hello@harbor.example"
+          href="mailto:jordan@theseuscreative.com"
           className="mt-2 inline-block text-[var(--accent)] hover:underline"
         >
-          hello@harbor.example
+          jordan@theseuscreative.com
         </a>
         <p className="mt-6 text-sm font-semibold text-[var(--ink)]">
           What to include

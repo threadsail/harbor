@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAppSession } from "@/utils/auth/session";
+import BuyerPaymentsPanel from "@/components/BuyerPaymentsPanel";
 import { getLinkedGalleriesForBuyer } from "@/utils/auth/link-gallery";
 import { galleryPath } from "@/lib/galleries";
 
@@ -43,6 +44,10 @@ export default async function BuyerAdminPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="mt-10">
+        <BuyerPaymentsPanel buyerEmail={session.email} />
       </div>
 
       <section className="mt-10">

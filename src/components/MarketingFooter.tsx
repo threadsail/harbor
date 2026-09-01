@@ -53,6 +53,12 @@ export default function MarketingFooter() {
             >
               Support
             </Link>
+            <Link
+              href="/info/privacy"
+              className="block text-[var(--muted)] hover:text-[var(--accent)]"
+            >
+              Privacy policy
+            </Link>
           </div>
           <div className="space-y-2">
             <p className="font-semibold text-[var(--ink)]">Account</p>
@@ -72,9 +78,20 @@ export default function MarketingFooter() {
         </div>
       </div>
       <div className="border-t border-[var(--border)]">
-        <div className="mx-auto max-w-6xl px-4 py-4 text-center text-xs text-[var(--muted)] sm:px-6 sm:text-left">
-          © {new Date().getFullYear()} Harbor. Device listings stay
-          private—visible only via shared links.
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-4 py-4 text-center text-xs text-[var(--muted)] sm:flex-row sm:justify-between sm:px-6 sm:text-left">
+          <p>
+            © {new Date().getFullYear()}{" "}
+            <a
+              href="https://www.theseuscreative.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--ink)] hover:text-[var(--accent)] hover:underline"
+            >
+              Theseus Creative LLC
+            </a>
+            . All rights reserved.
+          </p>
+          <p>Device listings stay private—visible only via shared links.</p>
         </div>
       </div>
     </footer>

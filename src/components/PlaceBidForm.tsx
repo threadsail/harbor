@@ -160,7 +160,7 @@ export default function PlaceBidForm({
             />
             <p className="mt-1.5 text-xs text-[var(--muted)]">
               Total for the quantity above. If accepted, you pay this amount via
-              Stripe; Harbor retains 5% for hosting.
+              Stripe; Harbor retains a hosting fee from the seller&apos;s payout.
             </p>
           </div>
         </div>

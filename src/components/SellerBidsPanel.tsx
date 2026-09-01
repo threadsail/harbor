@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Bid, Sale } from "@/lib/bids";
 import {
-  attachStripeSession,
-  finalizePaidSale,
-  readBids,
-  readSales,
-  rejectBid,
-  startSaleCheckout,
-} from "@/lib/bids-store";
-import { calculateHarborFee, formatUsd, HARBOR_FEE_RATE } from "@/lib/fees";
+  acceptOfferAndRequestPayment,
+  acceptOfferSuccessMessage,
+} from "@/lib/accept-offer-client";
+import { readBids, readSales, rejectBid } from "@/lib/bids-store";
+import { calculateHarborFeeForCurrentPlan, formatFeePercent, formatUsd } from "@/lib/fees";
+import { getFeeRateForPlan, readSellerPlan } from "@/lib/seller-plan";
 
 export default function SellerBidsPanel() {
   const [bids, setBids] = useState<Bid[]>([]);
@@ -27,6 +25,9 @@ export default function SellerBidsPanel() {
 
   useEffect(() => {
     refresh();
+    const onUpdate = () => refresh();
+    window.addEventListener("harbor-inventory-updated", onUpdate);
+    return () => window.removeEventListener("harbor-inventory-updated", onUpdate);
   }, []);
 
   const pending = bids.filter((bid) => bid.status === "pending");
@@ -34,76 +35,17 @@ export default function SellerBidsPanel() {
     (sale) => sale.paymentStatus === "awaiting_payment"
   );
 
-  async function handleAcceptAndCharge(bidId: string) {
+  async function handleAcceptOffer(bidId: string) {
     setMessage(null);
     setError(null);
     setLoadingBidId(bidId);
 
-    const started = startSaleCheckout(bidId);
-    if (!started.ok) {
-      setError(started.error);
-      setLoadingBidId(null);
-      refresh();
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          saleId: started.sale.id,
-          bidId: started.bid.id,
-          lotTitle: started.sale.lotTitle,
-          quantity: started.sale.quantity,
-          amount: started.sale.amount,
-          buyerEmail: started.sale.buyerEmail,
-          buyerName: started.sale.buyerName,
-        }),
-      });
-      const data = (await response.json()) as {
-        mode?: string;
-        url?: string;
-        sessionId?: string;
-        saleId?: string;
-        message?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setError(data.error || "Could not start Stripe checkout.");
-        setLoadingBidId(null);
-        refresh();
-        return;
-      }
-
-      if (data.mode === "simulate") {
-        const finalized = finalizePaidSale(started.sale.id, "simulated");
-        if (!finalized.ok) {
-          setError(finalized.error);
-        } else {
-          setMessage(
-            `${finalized.message} (Simulated — add Stripe keys for live checkout.)`
-          );
-          window.dispatchEvent(new Event("harbor-inventory-updated"));
-        }
-        setLoadingBidId(null);
-        refresh();
-        return;
-      }
-
-      if (data.sessionId) {
-        attachStripeSession(started.sale.id, data.sessionId);
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      setError("Stripe did not return a checkout URL.");
-    } catch {
-      setError("Network error starting Stripe checkout.");
+    const result = await acceptOfferAndRequestPayment(bidId);
+    if (!result.ok) {
+      setError(result.error);
+    } else {
+      setMessage(acceptOfferSuccessMessage(result));
+      window.dispatchEvent(new Event("harbor-inventory-updated"));
     }
 
     setLoadingBidId(null);
@@ -130,9 +72,10 @@ export default function SellerBidsPanel() {
           Incoming bids
         </h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Accept a bid to charge the buyer through Stripe. Harbor takes a{" "}
-          {(HARBOR_FEE_RATE * 100).toFixed(0)}% hosting fee; the seller receives
-          the rest. Inventory decreases only after payment succeeds.
+          Accept an offer to notify the buyer to pay via Stripe. Harbor&apos;s
+          hosting fee is {formatFeePercent(getFeeRateForPlan(readSellerPlan()))}{" "}
+          on your plan; the seller receives the rest. Inventory decreases only
+          after the buyer pays.
         </p>
 
         {message && (
@@ -155,7 +98,7 @@ export default function SellerBidsPanel() {
         ) : (
           <div className="mt-4 space-y-3">
             {pending.map((bid) => {
-              const fees = calculateHarborFee(bid.amount);
+              const fees = calculateHarborFeeForCurrentPlan(bid.amount);
               return (
                 <div
                   key={bid.id}
@@ -179,8 +122,9 @@ export default function SellerBidsPanel() {
                         {formatUsd(fees.total)}
                       </p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
-                        Harbor fee (5%): {formatUsd(fees.harborFee)} · Seller
-                        payout: {formatUsd(fees.sellerPayout)}
+                        Harbor fee ({formatFeePercent(fees.feeRate)}):{" "}
+                        {formatUsd(fees.harborFee)} · Seller payout:{" "}
+                        {formatUsd(fees.sellerPayout)}
                       </p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
                         Submitted {new Date(bid.createdAt).toLocaleString()}
@@ -190,12 +134,12 @@ export default function SellerBidsPanel() {
                       <button
                         type="button"
                         disabled={loadingBidId === bid.id}
-                        onClick={() => void handleAcceptAndCharge(bid.id)}
+                        onClick={() => void handleAcceptOffer(bid.id)}
                         className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-dark)] disabled:opacity-50"
                       >
                         {loadingBidId === bid.id
-                          ? "Starting Stripe…"
-                          : "Accept & charge with Stripe"}
+                          ? "Accepting…"
+                          : "Accept offer"}
                       </button>
                       <button
                         type="button"
@@ -216,8 +160,12 @@ export default function SellerBidsPanel() {
       {awaitingPayment.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold text-[var(--ink)]">
-            Awaiting Stripe payment
+            Awaiting buyer payment
           </h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            The buyer pays from their buyer admin. Inventory updates when Stripe
+            confirms payment.
+          </p>
           <div className="mt-4 space-y-3">
             {awaitingPayment.map((sale) => (
               <div
@@ -226,7 +174,8 @@ export default function SellerBidsPanel() {
               >
                 <p className="font-semibold text-[var(--ink)]">{sale.lotTitle}</p>
                 <p className="mt-1 text-[var(--muted)]">
-                  {sale.buyerName} · {sale.quantity.toLocaleString()} units ·{" "}
+                  {sale.buyerName} · {sale.buyerEmail} ·{" "}
+                  {sale.quantity.toLocaleString()} units ·{" "}
                   {formatUsd(sale.amount)}
                 </p>
                 <p className="mt-1 text-xs text-[var(--muted)]">
@@ -248,8 +197,8 @@ export default function SellerBidsPanel() {
         ).length === 0 ? (
           <div className="mt-4 border border-[var(--border)] bg-white p-6">
             <p className="text-sm text-[var(--muted)]">
-              Paid sales will appear here with Harbor&apos;s 5% fee and seller
-              payout.
+              Paid sales will appear here with Harbor&apos;s hosting fee and
+              seller payout.
             </p>
           </div>
         ) : (
@@ -260,7 +209,7 @@ export default function SellerBidsPanel() {
                   <th className="px-4 py-3 font-medium">Lot</th>
                   <th className="px-4 py-3 font-medium">Buyer</th>
                   <th className="px-4 py-3 font-medium">Total</th>
-                  <th className="px-4 py-3 font-medium">Harbor 5%</th>
+                  <th className="px-4 py-3 font-medium">Harbor fee</th>
                   <th className="hidden px-4 py-3 font-medium sm:table-cell">
                     Seller
                   </th>
@@ -295,10 +244,13 @@ export default function SellerBidsPanel() {
                         {formatUsd(sale.amount)}
                       </td>
                       <td className="px-4 py-3 text-[var(--ink)]">
-                        {formatUsd(sale.harborFee ?? sale.amount * 0.05)}
+                        {formatUsd(sale.harborFee)}
+                        <span className="mt-1 block text-xs font-normal text-[var(--muted)]">
+                          {formatFeePercent(sale.feeRate)}
+                        </span>
                       </td>
                       <td className="hidden px-4 py-3 text-[var(--muted)] sm:table-cell">
-                        {formatUsd(sale.sellerPayout ?? sale.amount * 0.95)}
+                        {formatUsd(sale.sellerPayout)}
                       </td>
                     </tr>
                   ))}

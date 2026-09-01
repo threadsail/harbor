@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { countUserCreatedLots } from "@/lib/seller-lots-store";
 import {
+  BUDGET_SELLER_LOT_LIMIT,
   FREE_SELLER_LOT_LIMIT,
   getLotQuota,
+  PLAN_LABEL,
   type LotQuota,
 } from "@/lib/seller-plan";
 
@@ -38,22 +40,43 @@ export default function SellerLotsHeader() {
           {quota?.plan === "free" && quota.limit != null ? (
             <>
               {" "}
-              Free plan: {quota.used} / {quota.limit} lots used.
+              {PLAN_LABEL.free} plan: {quota.used} / {quota.limit} lots used.
             </>
-          ) : quota?.plan === "pro" ? (
-            <> Pro plan: unlimited lots.</>
+          ) : quota?.plan === "budget" && quota.limit != null ? (
+            <>
+              {" "}
+              {PLAN_LABEL.budget} plan: {quota.used} / {quota.limit} lots used.
+            </>
+          ) : quota ? (
+            <> {PLAN_LABEL[quota.plan]} plan: unlimited lots.</>
           ) : null}
         </p>
         {atLimit ? (
           <p className="mt-2 text-sm text-[var(--ink)]">
-            You&apos;ve reached the {FREE_SELLER_LOT_LIMIT}-lot free limit.{" "}
-            <Link
-              href="/pricing"
-              className="font-semibold text-[var(--accent)] hover:underline"
-            >
-              Upgrade to Pro
-            </Link>{" "}
-            for unlimited device lots.
+            {quota?.plan === "budget" ? (
+              <>
+                You&apos;ve reached the {BUDGET_SELLER_LOT_LIMIT}-lot Budget
+                limit.{" "}
+                <Link
+                  href="/pricing"
+                  className="font-semibold text-[var(--accent)] hover:underline"
+                >
+                  Upgrade to Pro
+                </Link>{" "}
+                for unlimited device lots.
+              </>
+            ) : (
+              <>
+                You&apos;ve reached the {FREE_SELLER_LOT_LIMIT}-lot free limit.{" "}
+                <Link
+                  href="/pricing"
+                  className="font-semibold text-[var(--accent)] hover:underline"
+                >
+                  Upgrade to Budget or Pro
+                </Link>{" "}
+                for more device lots.
+              </>
+            )}
           </p>
         ) : null}
       </div>
@@ -62,7 +85,7 @@ export default function SellerLotsHeader() {
           href="/pricing"
           className="rounded-md border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--mist)]"
         >
-          Upgrade to Pro
+          View plans
         </Link>
       ) : (
         <Link

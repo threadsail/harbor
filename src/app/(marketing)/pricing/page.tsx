@@ -1,7 +1,14 @@
 import Link from "next/link";
-import { FREE_SELLER_LOT_LIMIT } from "@/lib/seller-plan";
+import {
+  BUDGET_SELLER_LOT_LIMIT,
+  FREE_SELLER_LOT_LIMIT,
+  PLAN_ANNUAL_PRICE,
+  PLAN_FEE_RATE,
+  planLotLimitLabel,
+} from "@/lib/seller-plan";
+import { formatFeePercent } from "@/lib/fees";
 
-const plans = [
+const sellerPlans = [
   {
     name: "Free",
     price: "$0",
@@ -10,41 +17,55 @@ const plans = [
       `Up to ${FREE_SELLER_LOT_LIMIT} device lots`,
       "Private Seller Inventory links",
       "Invite vendor bidding",
-      "Stripe payouts minus 5% Harbor fee",
+      `Stripe payouts minus ${formatFeePercent(PLAN_FEE_RATE.free)} Harbor fee`,
     ],
     cta: "Start free",
     href: "/auth?intent=sell&mode=signup",
   },
   {
+    name: "Budget",
+    price: `$${PLAN_ANNUAL_PRICE.budget}/year`,
+    detail: "For growing IT teams with more inventory",
+    features: [
+      planLotLimitLabel("budget"),
+      "Everything in Free",
+      `Stripe payouts minus ${formatFeePercent(PLAN_FEE_RATE.budget)} Harbor fee`,
+      "Email support",
+    ],
+    cta: "Get Budget",
+    href: "/info/contact?plan=budget",
+  },
+  {
     name: "Pro",
-    price: "Contact us",
+    price: `$${PLAN_ANNUAL_PRICE.pro}/year`,
     detail: "For districts and enterprises with larger fleets",
     features: [
-      "Unlimited device lots",
-      "Everything in Free",
-      "Multi-site inventories",
+      planLotLimitLabel("pro"),
+      "Everything in Budget",
+      `Stripe payouts minus ${formatFeePercent(PLAN_FEE_RATE.pro)} Harbor fee`,
       "Team seats for IT staff",
       "Priority onboarding",
     ],
     featured: true,
-    cta: "Upgrade to Pro",
-    href: "/info/contact",
-  },
-  {
-    name: "Vendor",
-    price: "Free to join",
-    detail: "For recycling & refurb buyers",
-    features: [
-      "Open shared inventory links",
-      "Submit bids on lots",
-      "Pay accepted bids via Stripe",
-      "Buyer profile for sellers",
-      "Account required to bid",
-    ],
-    cta: "Join as vendor",
-    href: "/auth?intent=buy&mode=signup",
+    cta: "Get Pro",
+    href: "/info/contact?plan=pro",
   },
 ];
+
+const vendorPlan = {
+  name: "Vendors",
+  price: "Free to join",
+  detail: "For recycling & refurb buyers",
+  features: [
+    "Open shared inventory links",
+    "Submit bids on lots",
+    "Pay accepted bids via Stripe",
+    "Buyer profile for sellers",
+    "Account required to bid",
+  ],
+  cta: "Join as vendor",
+  href: "/auth?intent=buy&mode=signup",
+};
 
 export default function PricingPage() {
   return (
@@ -54,27 +75,17 @@ export default function PricingPage() {
           Simple plans for sellers and buyers
         </h1>
         <p className="mt-4 text-lg text-[var(--muted)]">
-          Start free with up to {FREE_SELLER_LOT_LIMIT} device lots. Upgrade to
-          Pro when you need unlimited listings. Vendors bid for free.
+          Start free with up to {FREE_SELLER_LOT_LIMIT} device lots. Budget adds
+          up to {BUDGET_SELLER_LOT_LIMIT} lots; Pro is unlimited. Vendors bid
+          for free.
         </p>
       </div>
 
-      <div className="mt-10 mx-auto max-w-2xl border border-[var(--border)] bg-white p-6 text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-          Hosting fee
-        </p>
-        <p className="font-display mt-2 text-3xl text-[var(--ink)]">5%</p>
-        <p className="mt-2 text-sm text-[var(--muted)]">
-          Harbor takes 5% of each paid sale for platform hosting. The remaining
-          95% is the seller payout. Buyers pay the full bid amount via Stripe.
-        </p>
-      </div>
-
-      <div className="mt-14 grid gap-6 md:grid-cols-3">
-        {plans.map((plan) => (
+      <div className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        {sellerPlans.map((plan) => (
           <div
             key={plan.name}
-            className={`flex flex-col border bg-white p-6 ${
+            className={`flex min-h-full flex-col border bg-white p-6 sm:p-8 ${
               plan.featured
                 ? "border-[var(--accent)] shadow-md"
                 : "border-[var(--border)]"
@@ -114,6 +125,34 @@ export default function PricingPage() {
           </div>
         ))}
       </div>
+
+      <section className="mt-6 border border-[var(--border)] bg-white px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="shrink-0 text-center sm:text-left">
+            <p className="text-sm font-semibold text-[var(--ink)]">
+              {vendorPlan.name}
+              <span className="font-normal text-[var(--muted)]">
+                {" "}
+                · {vendorPlan.price}
+              </span>
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--muted)]">
+              {vendorPlan.detail}
+            </p>
+          </div>
+
+          <p className="flex-1 text-center text-xs leading-relaxed text-[var(--muted)] sm:text-sm">
+            {vendorPlan.features.join(" · ")}
+          </p>
+
+          <Link
+            href={vendorPlan.href}
+            className="inline-flex shrink-0 justify-center self-center rounded-md border border-[var(--border)] px-4 py-1.5 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--mist)]"
+          >
+            {vendorPlan.cta}
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

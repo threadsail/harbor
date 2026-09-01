@@ -43,8 +43,8 @@ function PaymentSuccessContent() {
       <p className="mt-4 text-[var(--muted)]">{message}</p>
       {detail && <p className="mt-2 text-sm text-[var(--muted)]">{detail}</p>}
       <p className="mt-6 text-sm text-[var(--muted)]">
-        Harbor collects a 5% hosting fee from each sale. The remainder is the
-        seller payout.
+        Harbor collects a hosting fee from each sale (10% on Free, 5% on Budget,
+        2.5% on Pro). The remainder is the seller payout.
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link

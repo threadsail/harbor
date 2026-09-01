@@ -11,9 +11,10 @@ import {
 } from "@/lib/seller-lots";
 import { countUserCreatedLots } from "@/lib/seller-lots-store";
 import {
-  FREE_SELLER_LOT_LIMIT,
   getLotQuota,
+  hasUnlimitedLots,
   lotLimitReachedMessage,
+  PLAN_LABEL,
 } from "@/lib/seller-plan";
 
 const CONDITIONS = ["New", "Good", "Fair", "Mixed", "For parts"] as const;
@@ -74,13 +75,11 @@ export default function AddLotForm() {
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [usedLots, setUsedLots] = useState(0);
-  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     const used = countUserCreatedLots();
     setUsedLots(used);
     const quota = getLotQuota(used);
-    setIsPro(quota.plan === "pro");
     setBlocked(!quota.canAddLot);
   }, []);
 
@@ -160,8 +159,8 @@ export default function AddLotForm() {
         createdAt: new Date().toISOString(),
       };
       const existing = readLots();
-      if (existing.length >= FREE_SELLER_LOT_LIMIT && quota.plan === "free") {
-        setError(lotLimitReachedMessage());
+      if (!quota.canAddLot) {
+        setError(lotLimitReachedMessage(quota.plan));
         setSaving(false);
         setBlocked(true);
         return;
@@ -214,9 +213,13 @@ export default function AddLotForm() {
       )}
 
       <p className="text-sm text-[var(--muted)]">
-        {isPro
-          ? "Pro plan: you can add unlimited device lots."
-          : `Free plan: ${usedLots} / ${FREE_SELLER_LOT_LIMIT} device lots used. Upgrade to Pro for unlimited lots.`}
+        {(() => {
+          const quota = getLotQuota(usedLots);
+          if (hasUnlimitedLots(quota.plan)) {
+            return `${PLAN_LABEL[quota.plan]} plan: you can add unlimited device lots.`;
+          }
+          return `${PLAN_LABEL[quota.plan]} plan: ${usedLots} / ${quota.limit} device lots used.`;
+        })()}
       </p>
 
       <section className="border border-[var(--border)] bg-white p-6">

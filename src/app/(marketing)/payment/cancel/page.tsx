@@ -10,21 +10,21 @@ export default function PaymentCancelPage() {
         Payment canceled
       </h1>
       <p className="mt-4 text-[var(--muted)]">
-        No charge was made. The bid is still awaiting payment—you can try Stripe
-        checkout again from the seller admin, or the seller can reject the bid.
+        No charge was made. Your offer is still awaiting payment—you can try
+        again from buyer admin.
       </p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
-          href="/dashboard/seller"
+          href="/dashboard/buyer"
           className="rounded-md bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--accent-dark)]"
         >
-          Back to seller admin
+          Back to buyer admin
         </Link>
         <Link
-          href="/dashboard/buyer"
+          href="/dashboard/seller"
           className="rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--mist)]"
         >
-          Buyer admin
+          Seller admin
         </Link>
       </div>
     </div>

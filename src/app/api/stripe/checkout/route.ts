@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { calculateHarborFee, HARBOR_FEE_RATE } from "@/lib/fees";
+import { calculateHarborFee } from "@/lib/fees";
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +12,7 @@ export async function POST(request: Request) {
       amount?: number;
       buyerEmail?: string;
       buyerName?: string;
+      feeRate?: number;
     };
 
     const {
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
       amount,
       buyerEmail,
       buyerName,
+      feeRate,
     } = body;
 
     if (
@@ -55,9 +57,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const fees = calculateHarborFee(amount);
+    const fees = calculateHarborFee(amount, feeRate);
     const origin = new URL(request.url).origin;
     const unitAmount = Math.round(fees.total * 100);
+    const feePercent = (fees.feeRate * 100).toFixed(0);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -70,7 +73,7 @@ export async function POST(request: Request) {
             unit_amount: unitAmount,
             product_data: {
               name: lotTitle,
-              description: `${quantity.toLocaleString()} units · includes ${(HARBOR_FEE_RATE * 100).toFixed(0)}% Harbor hosting fee ($${fees.harborFee.toFixed(2)})`,
+              description: `${quantity.toLocaleString()} units · includes ${feePercent}% Harbor hosting fee ($${fees.harborFee.toFixed(2)})`,
             },
           },
         },

@@ -9,14 +9,16 @@ import {
 } from "@/lib/seller-lots-store";
 import type { SellerLot } from "@/lib/seller-lots";
 import {
-  attachStripeSession,
-  finalizePaidSale,
+  acceptOfferAndRequestPayment,
+  acceptOfferSuccessMessage,
+} from "@/lib/accept-offer-client";
+import {
   readBids,
   readSales,
   rejectBid,
-  startSaleCheckout,
 } from "@/lib/bids-store";
-import { calculateHarborFee, formatUsd, HARBOR_FEE_RATE } from "@/lib/fees";
+import { calculateHarborFeeForCurrentPlan, formatFeePercent, formatUsd } from "@/lib/fees";
+import { getFeeRateForPlan, readSellerPlan } from "@/lib/seller-plan";
 
 function statusLabel(status: Bid["status"]): string {
   switch (status) {
@@ -65,74 +67,17 @@ export default function SellerLotDetail() {
     };
   }, [lotId]);
 
-  async function handleAcceptAndCharge(bidId: string) {
+  async function handleAcceptOffer(bidId: string) {
     setMessage(null);
     setError(null);
     setLoadingBidId(bidId);
 
-    const started = startSaleCheckout(bidId);
-    if (!started.ok) {
-      setError(started.error);
-      setLoadingBidId(null);
-      refresh();
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          saleId: started.sale.id,
-          bidId: started.bid.id,
-          lotTitle: started.sale.lotTitle,
-          quantity: started.sale.quantity,
-          amount: started.sale.amount,
-          buyerEmail: started.sale.buyerEmail,
-          buyerName: started.sale.buyerName,
-        }),
-      });
-      const data = (await response.json()) as {
-        mode?: string;
-        url?: string;
-        sessionId?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        setError(data.error || "Could not start Stripe checkout.");
-        setLoadingBidId(null);
-        refresh();
-        return;
-      }
-
-      if (data.mode === "simulate") {
-        const finalized = finalizePaidSale(started.sale.id, "simulated");
-        if (!finalized.ok) {
-          setError(finalized.error);
-        } else {
-          setMessage(
-            `${finalized.message} (Simulated — add Stripe keys for live checkout.)`
-          );
-          window.dispatchEvent(new Event("harbor-inventory-updated"));
-        }
-        setLoadingBidId(null);
-        refresh();
-        return;
-      }
-
-      if (data.sessionId) {
-        attachStripeSession(started.sale.id, data.sessionId);
-      }
-
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      setError("Stripe did not return a checkout URL.");
-    } catch {
-      setError("Network error starting Stripe checkout.");
+    const result = await acceptOfferAndRequestPayment(bidId);
+    if (!result.ok) {
+      setError(result.error);
+    } else {
+      setMessage(acceptOfferSuccessMessage(result));
+      window.dispatchEvent(new Event("harbor-inventory-updated"));
     }
 
     setLoadingBidId(null);
@@ -239,8 +184,9 @@ export default function SellerLotDetail() {
           Offers on this lot
         </h2>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          See who is bidding. Accept to charge via Stripe — Harbor takes{" "}
-          {(HARBOR_FEE_RATE * 100).toFixed(0)}%; the seller receives the rest.
+          See who is bidding. Accept to notify the buyer to pay via Stripe —
+          Harbor&apos;s hosting fee is {formatFeePercent(getFeeRateForPlan(readSellerPlan()))}{" "}
+          on your plan; the seller receives the rest.
         </p>
 
         {message && (
@@ -263,7 +209,7 @@ export default function SellerLotDetail() {
         ) : (
           <div className="mt-4 space-y-3">
             {pending.map((bid) => {
-              const fees = calculateHarborFee(bid.amount);
+              const fees = calculateHarborFeeForCurrentPlan(bid.amount);
               return (
                 <div
                   key={bid.id}
@@ -294,12 +240,12 @@ export default function SellerLotDetail() {
                       <button
                         type="button"
                         disabled={loadingBidId === bid.id}
-                        onClick={() => void handleAcceptAndCharge(bid.id)}
+                        onClick={() => void handleAcceptOffer(bid.id)}
                         className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--accent-dark)] disabled:opacity-50"
                       >
                         {loadingBidId === bid.id
-                          ? "Starting Stripe…"
-                          : "Accept & charge"}
+                          ? "Accepting…"
+                          : "Accept offer"}
                       </button>
                       <button
                         type="button"
@@ -315,7 +261,7 @@ export default function SellerLotDetail() {
             })}
 
             {otherOffers.map((bid) => {
-              const fees = calculateHarborFee(bid.amount);
+              const fees = calculateHarborFeeForCurrentPlan(bid.amount);
               const relatedSale = sales.find((sale) => sale.bidId === bid.id);
               return (
                 <div

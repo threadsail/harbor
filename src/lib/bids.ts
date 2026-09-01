@@ -41,6 +41,7 @@ export type Sale = {
   feeRate: number;
   paymentStatus: SalePaymentStatus;
   stripeSessionId?: string;
+  stripeCheckoutUrl?: string;
   remainingQuantity: number;
   lotClosed: boolean;
   createdAt: string;
@@ -111,7 +112,8 @@ export type AcceptBidResult =
 export function buildSaleFromBid(
   bid: Bid,
   lot: Pick<SellerLot, "id" | "title" | "quantity" | "status">,
-  paymentStatus: SalePaymentStatus = "awaiting_payment"
+  paymentStatus: SalePaymentStatus = "awaiting_payment",
+  feeRate?: number
 ): AcceptBidResult {
   if (bid.status !== "pending" && bid.status !== "awaiting_payment") {
     return { ok: false, error: "This bid is no longer pending." };
@@ -127,7 +129,7 @@ export function buildSaleFromBid(
   }
 
   const applied = applyAcceptedSaleToLot(lot, bid.quantity);
-  const fees = calculateHarborFee(bid.amount);
+  const fees = calculateHarborFee(bid.amount, feeRate);
   const sale: Sale = {
     id: createSaleId(),
     bidId: bid.id,

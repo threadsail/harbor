@@ -17,6 +17,7 @@ import {
   type SellerLotStatus,
 } from "@/lib/seller-lots";
 import { DEMO_GALLERY_LOTS } from "@/lib/galleries";
+import { getFeeRateForPlan, readSellerPlan } from "@/lib/seller-plan";
 
 function readJson<T>(key: string, fallback: T): T {
   try {
@@ -225,7 +226,8 @@ export function startSaleCheckout(bidId: string):
       quantity: lot.quantity,
       status: lot.status,
     },
-    "awaiting_payment"
+    "awaiting_payment",
+    getFeeRateForPlan(readSellerPlan())
   );
   if (!built.ok) return { ok: false, error: built.error };
 
@@ -236,12 +238,27 @@ export function startSaleCheckout(bidId: string):
   return { ok: true, sale: built.sale, bid: updatedBid };
 }
 
-export function attachStripeSession(saleId: string, sessionId: string) {
+export function attachStripeCheckout(
+  saleId: string,
+  sessionId: string,
+  checkoutUrl: string
+) {
   writeSales(
     readSales().map((sale) =>
-      sale.id === saleId ? { ...sale, stripeSessionId: sessionId } : sale
+      sale.id === saleId
+        ? { ...sale, stripeSessionId: sessionId, stripeCheckoutUrl: checkoutUrl }
+        : sale
     )
   );
+}
+
+/** @deprecated Use attachStripeCheckout */
+export function attachStripeSession(saleId: string, sessionId: string) {
+  attachStripeCheckout(saleId, sessionId, "");
+}
+
+export function getSaleById(saleId: string): Sale | undefined {
+  return readSales().find((sale) => sale.id === saleId);
 }
 
 /**
